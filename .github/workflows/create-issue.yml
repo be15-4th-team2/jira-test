@@ -73,15 +73,18 @@ jobs:
           ISSUE_KEY: ${{ steps.create.outputs.issue }}
           NEW_DESCRIPTION: ${{ steps.md2jira.outputs.output-text }}
         run: |
+          ESCAPED_DESCRIPTION=$(echo "$NEW_DESCRIPTION" | jq -R .)
+      
           curl -X PUT \
             -u $JIRA_USER_EMAIL:$JIRA_API_TOKEN \
             -H "Content-Type: application/json" \
-            --data '{
-              "fields": {
-                "description": "'"$NEW_DESCRIPTION"'"
+            --data "{
+              \"fields\": {
+                \"description\": $ESCAPED_DESCRIPTION
               }
-            }' \
+            }" \
             "$JIRA_BASE_URL/rest/api/2/issue/$ISSUE_KEY"
+
 
       - name: Log created issue
         run: |
