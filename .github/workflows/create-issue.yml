@@ -46,7 +46,7 @@ jobs:
           project: TOKI
           issuetype: Task
           summary: '${{ github.event.issue.title }}'
-          description: '임시 생성입니다. 나중에 덮어씁니다.'
+          description: '임시 생성입니다. 나중에 업데이트합니다.'
 
       - name: Convert markdown to Jira Syntax
         uses: peter-evans/jira2md@v1
@@ -65,7 +65,7 @@ jobs:
             ${{ github.event.issue.body }}
           mode: md2jira
 
-      - name: Update Jira Issue Description
+      - name: Update Jira Issue Description safely
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
@@ -73,18 +73,14 @@ jobs:
           ISSUE_KEY: ${{ steps.create.outputs.issue }}
           NEW_DESCRIPTION: ${{ steps.md2jira.outputs.output-text }}
         run: |
-          ESCAPED_DESCRIPTION=$(echo "$NEW_DESCRIPTION" | jq -R .)
-      
+          echo "${NEW_DESCRIPTION}" > description_raw.txt
+          ESCAPED_DESCRIPTION=$(jq -Rs . < description_raw.txt)
+
           curl -X PUT \
             -u $JIRA_USER_EMAIL:$JIRA_API_TOKEN \
             -H "Content-Type: application/json" \
-            --data "{
-              \"fields\": {
-                \"description\": $ESCAPED_DESCRIPTION
-              }
-            }" \
+            --data "{\"fields\": {\"description\": $ESCAPED_DESCRIPTION}}" \
             "$JIRA_BASE_URL/rest/api/2/issue/$ISSUE_KEY"
-
 
       - name: Log created issue
         run: |
