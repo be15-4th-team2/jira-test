@@ -74,7 +74,9 @@ jobs:
             }
 
       - name: Log created issue
-        run: echo "Jira Issue Created: ${{ steps.create.outputs.issue }}"
+        run: |
+          ISSUE="${{ steps.create.outputs.issue }}"
+          echo "Jira Issue Created: $ISSUE"
 
       - name: Create branch with Ticket number
         run: |
