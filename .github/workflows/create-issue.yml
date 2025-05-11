@@ -45,7 +45,7 @@ jobs:
           GITHUB_ASSIGNEE: ${{ github.event.issue.assignees[0].login }}
         run: |
           declare -A USER_MAP=(
-            ["CHO-HYUN-SEUNG"]=${{ secrets.HYUN_SEUNG_ACCOUNT_ID }}
+            ["Cho-Hyun-Seung"]=${{ secrets.HYUN_SEUNG_ACCOUNT_ID }}
           )
 
           if [ -z "$GITHUB_ASSIGNEE" ]; then
