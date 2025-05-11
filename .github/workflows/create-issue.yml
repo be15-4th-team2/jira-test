@@ -47,13 +47,12 @@ jobs:
           declare -A USER_MAP=(
             ["CHO-HYUN-SEUNG"]=${{ secrets.HYUN_SEUNG_ACCOUNT_ID }}
           )
-      
+
           if [ -z "$GITHUB_ASSIGNEE" ]; then
             echo "No GitHub assignees found."
             echo "JIRA_ASSIGNEE=" >> $GITHUB_ENV
           else
             JIRA_ASSIGNEE=${USER_MAP[$GITHUB_ASSIGNEE]}
-      
             if [ -z "$JIRA_ASSIGNEE" ]; then
               echo "No Jira mapping found for $GITHUB_ASSIGNEE"
               echo "JIRA_ASSIGNEE=" >> $GITHUB_ENV
@@ -72,12 +71,11 @@ jobs:
           summary: '${{ github.event.issue.title }}'
           description: '임시 생성입니다. 나중에 업데이트합니다.'
           fields: |
-            ${{ 
-              toJson(
-                fromJson('{"assignee": {"id": ""}}') |
-                setPath(["assignee","id"]; env.JIRA_ASSIGNEE)
-              ) 
-            }}
+            {
+              "assignee": {
+                "id": "${{ env.JIRA_ASSIGNEE }}"
+              }
+            }
 
       - name: Convert markdown to Jira Syntax
         uses: peter-evans/jira2md@v1
@@ -140,7 +138,7 @@ jobs:
         uses: actions-cool/issues-helper@v3
         with:
           actions: 'create-comment'
-        token: ${{ secrets.GITHUB_TOKEN }}
-        issue-number: ${{ github.event.issue.number }}
-        body: |
-          Jira Issue Created: [${{ steps.create.outputs.issue }}](${{ secrets.JIRA_BASE_URL }}/browse/${{ steps.create.outputs.issue }})
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            Jira Issue Created: [${{ steps.create.outputs.issue }}](${{ secrets.JIRA_BASE_URL }}/browse/${{ steps.create.outputs.issue }})
