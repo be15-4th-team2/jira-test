@@ -1,0 +1,70 @@
+name: Notify Reviewers on PR
+
+on:
+  pull_request:
+    types: [review_requested]
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for reviewers to settle
+        run: sleep 10
+
+      - name: Map GitHub usernames to Discord IDs
+        id: map-reviewers
+        env:
+          REVIEWERS_JSON: ${{ toJson(github.event.pull_request.requested_reviewers) }}
+        run: |
+          echo "🔄 Mapping GitHub reviewers to Discord mentions..."
+
+          declare -A USER_MAP=(
+            ["Jangwoo0710"]="1274603247977365504"
+           
+          )
+
+          mentions=""
+
+          while read login; do
+            id=${USER_MAP[$login]}
+            if [ -n "$id" ]; then
+              mentions+="<@$id> "
+            else
+              echo "⚠️ No Discord ID mapped for $login"
+            fi
+          done < <(echo "$REVIEWERS_JSON" | jq -r '.[].login')
+
+          echo "mentions=$mentions" >> "$GITHUB_OUTPUT"
+
+      - name: Check if notification already sent
+        id: check
+        run: |
+          mkdir -p .cache
+          SENT_FILE=".cache/sent-${{ github.event.pull_request.number }}.flag"
+
+          if [ -f "$SENT_FILE" ]; then
+            echo "🔁 Already sent notification for this PR. Skipping..."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "✅ Sending notification for the first time."
+            touch "$SENT_FILE"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send Discord Notification
+        if: steps.check.outputs.skip == 'false'
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          MENTIONS: ${{ steps.map-reviewers.outputs.mentions }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          -d "{
+            \"content\": \"📣 $MENTIONS님! Pull Request 리뷰어로 지정됐습니다. 확인해 주세요.\\n🔗 PR: $PR_URL\",
+            \"allowed_mentions\": {
+              \"parse\": [\"users\"]
+            }
+          }" \
+          "$DISCORD_WEBHOOK_URL"
